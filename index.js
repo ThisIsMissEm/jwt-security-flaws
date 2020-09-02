@@ -47,11 +47,29 @@ crypto.generateKeyPair(
       expiresIn,
     });
 
-    let malicious = jwt.sign(example_payload, "", {
-      algorithm: "none",
-      expiresIn,
-      keyid: "test",
-    });
+    /**
+     * Create a token based on the signed token, but using the none algorithm and no signature:
+     *
+     * The below can also be done as:
+     *
+     *    let malicious = jwt.sign(example_payload, "", {
+     *       algorithm: "none",
+     *       expiresIn
+     *     });
+     */
+    const parsed = jwt.decode(signed, { complete: true });
+
+    // Replace the algorithm and delete the signature
+    parsed.header.alg = "none";
+    parsed.sigature = "";
+
+    const malicious = [
+      base64url(JSON.stringify(parsed.header)),
+      base64url(JSON.stringify(parsed.payload)),
+      base64url(parsed.sigature),
+    ].join(".");
+
+    // end creation of malicious token
 
     console.log("");
     console.log({ signed, malicious });
@@ -88,4 +106,12 @@ crypto.generateKeyPair(
 
 function log(result, testId, message) {
   console.log(`${result}: ${testId.padStart(10)}: ${message}`);
+}
+
+function base64url(string) {
+  return Buffer.from(string, "utf8")
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
 }
